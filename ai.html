@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <!-- 底层死锁视口，禁止缩放 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>鼎盛轩 · 豪华中式大酒楼 (AI 双语音完美版)</title>
+    <title>鼎盛轩 · 豪华中式大酒楼 (连锁风格尊享版)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 引入 Firebase 官方 SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -38,6 +38,42 @@
 </head>
 <body class="min-h-screen pb-28 flex flex-col">
 
+    <!-- ==================== 🌟 进店迎宾弹窗（Dine In / Take Away 选择） ==================== -->
+    <div id="mode-selection-modal" class="fixed inset-0 bg-black/70 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div class="bg-[#FFFDF9] border border-[#E6D5B8] rounded-[2.5rem] p-6 max-w-sm w-full shadow-2xl flex flex-col space-y-5 animate-scale-up">
+            <div class="text-center">
+                <h2 class="text-xl font-black text-[#2C221E]">欢迎光临 鼎盛轩</h2>
+                <p class="text-xs text-[#7A6B63] mt-1">请选择您的用餐方式与人数</p>
+            </div>
+
+            <!-- 模式选择卡片 -->
+            <div class="grid grid-cols-2 gap-3">
+                <div onclick="setOrderMode('Dine In')" id="mode-dine-in" class="cursor-pointer border-2 border-[#D4AF37] bg-amber-50/60 rounded-2xl p-4 flex flex-col items-center justify-center space-y-2 transition shadow-sm">
+                    <span class="text-2xl">🍽️</span>
+                    <span class="text-xs font-bold text-[#2C221E]">堂食 Dine In</span>
+                </div>
+                <div onclick="setOrderMode('Take Away')" id="mode-take-away" class="cursor-pointer border-2 border-stone-200 bg-white rounded-2xl p-4 flex flex-col items-center justify-center space-y-2 transition shadow-sm">
+                    <span class="text-2xl">🛍️</span>
+                    <span class="text-xs font-semibold text-stone-600">打包 Take Away</span>
+                </div>
+            </div>
+
+            <!-- 用餐人数选择（仅堂食时显示） -->
+            <div id="pax-container" class="bg-white border border-[#E6D5B8] rounded-2xl p-3 flex justify-between items-center">
+                <span class="text-xs font-bold text-[#5C4A42]">👥 用餐人数 (No. of pax)：</span>
+                <div class="flex items-center space-x-3">
+                    <button onclick="adjustPax(-1)" class="w-7 h-7 bg-[#F2EDE4] text-[#C59B27] rounded-full font-bold flex items-center justify-center text-sm shadow-sm">-</button>
+                    <span id="display-pax" class="text-[#2C221E] font-black text-base w-5 text-center">2</span>
+                    <button onclick="adjustPax(1)" class="w-7 h-7 bg-[#D4AF37] text-white rounded-full font-bold flex items-center justify-center text-sm shadow-sm">+</button>
+                </div>
+            </div>
+
+            <button onclick="confirmModeSelection()" class="w-full bg-gradient-to-r from-[#D4AF37] to-[#C59B27] text-white font-bold py-3.5 rounded-xl shadow-lg text-sm transition active:scale-95">
+                开始点餐 (Continue) ➔
+            </button>
+        </div>
+    </div>
+
     <!-- 顶端无缝跑马灯公告条 -->
     <div class="bg-gradient-to-r from-[#D4AF37] via-[#E6C687] to-[#D4AF37] text-[#2C221E] text-xs font-bold py-2 overflow-hidden whitespace-nowrap shadow-sm">
         <div class="animate-marquee-seamless">
@@ -47,22 +83,30 @@
     </div>
 
     <!-- 顶部沉浸式招牌区 -->
-    <div class="relative bg-cover bg-center py-7 px-4 text-center border-b border-[#E6D5B8] overflow-hidden shadow-md" style="background-image: url('https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=1200&q=80')">
+    <div class="relative bg-cover bg-center py-6 px-4 text-center border-b border-[#E6D5B8] overflow-hidden shadow-md" style="background-image: url('https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=1200&q=80')">
         <div class="absolute inset-0 bg-gradient-to-t from-[#2C221E]/95 via-[#2C221E]/65 to-black/40 backdrop-blur-[1px]"></div>
         <div class="relative z-10 flex flex-col items-center">
             <h1 class="text-3xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-[#F3E5AB] via-[#FFD700] to-[#F3E5AB] drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
                 鼎盛轩
             </h1>
             <p class="text-[11px] text-[#E6D5B8] tracking-widest mt-1 uppercase font-semibold">DIING SHENG XUAN · GRAND SEAFOOD & ZICHAR</p>
-            <div class="flex items-center space-x-2.5 mt-2.5">
-                <div class="bg-black/50 border border-[#D4AF37]/60 px-3.5 py-1.5 rounded-full text-xs text-[#FFD700] shadow-inner backdrop-blur-md">
-                    📍 尊贵堂食桌位：<span id="display-table-num" class="font-bold text-white">V1 桌</span>
+            <div class="flex items-center space-x-2 mt-2.5 flex-wrap justify-center gap-y-1">
+                <div class="bg-black/50 border border-[#D4AF37]/60 px-3 py-1 rounded-full text-xs text-[#FFD700] shadow-inner backdrop-blur-md">
+                    📍 <span id="header-mode-text">堂食</span>：<span id="display-table-num" class="font-bold text-white">V1 桌</span> (<span id="display-pax-num">2</span>位)
                 </div>
                 <!-- 查看今日已点订单按钮（报备） -->
-                <button onclick="toggleTodayOrdersModal()" class="bg-[#D4AF37] text-white border border-[#FFD700] px-3.5 py-1.5 rounded-full text-xs font-bold shadow transition active:scale-95 flex items-center space-x-1">
+                <button onclick="toggleTodayOrdersModal()" class="bg-[#D4AF37] text-white border border-[#FFD700] px-3 py-1 rounded-full text-xs font-bold shadow transition active:scale-95 flex items-center space-x-1">
                     <span>📜 今日已点</span>
                 </button>
             </div>
+        </div>
+    </div>
+
+    <!-- ==================== 🔍 精准名称与编号搜索栏 ==================== -->
+    <div class="bg-white border-b border-[#E6D5B8] px-3.5 py-2.5 flex items-center shadow-sm">
+        <div class="relative w-full">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-stone-400">🔍</span>
+            <input type="text" id="dish-search-input" oninput="handleSearch(this.value)" placeholder="搜索菜品名称或编号 (例如: 水, 肉, 101)..." class="w-full bg-[#FBF9F5] border border-[#E6D5B8] rounded-xl pl-9 pr-4 py-2 text-xs text-[#2C221E] focus:outline-none focus:border-[#D4AF37] font-medium">
         </div>
     </div>
 
@@ -102,7 +146,7 @@
             </div>
             <div>
                 <div class="text-xs text-[#7A6B63]">已选 <span id="cart-count" class="text-[#2C221E] font-bold text-xs">0</span> 样菜品</div>
-                <div class="text-[#C59B27] font-black text-lg">RM <span id="cart-total">0.00</span></div>
+                <div class="text-[#1F2937] font-black text-lg">RM <span id="cart-total">0.00</span></div>
             </div>
         </div>
         <button onclick="toggleCartModal()" class="bg-gradient-to-r from-[#D4AF37] to-[#C59B27] text-white px-5 py-3 rounded-xl font-bold text-xs shadow-md transition active:scale-95">
@@ -110,7 +154,7 @@
         </button>
     </div>
 
-    <!-- ==================== 🤖 AI 智能迎宾助手（双语音按钮：朗读 + 对话） ==================== -->
+    <!-- ==================== 🤖 AI 智能迎宾助手 ==================== -->
     <div class="fixed bottom-20 right-4 z-40 flex flex-col items-end">
         <div id="ai-chat-box" class="mb-3 w-80 bg-white/95 backdrop-blur-md border-2 border-[#D4AF37] rounded-3xl shadow-2xl p-4 flex flex-col transition-all duration-300">
             <div class="flex justify-between items-center border-b border-amber-100 pb-2 mb-2">
@@ -129,13 +173,16 @@
                 正在加载智能迎宾语...
             </div>
 
-            <!-- 双语音按钮控制区（朗读 + 语音对话） -->
-            <div class="flex items-center space-x-2 mb-3">
-                <button onclick="playAiVoice()" id="ai-voice-btn" class="flex-1 bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 px-3 py-2 rounded-xl text-[11px] font-bold flex items-center justify-center space-x-1 transition active:scale-95 shadow-sm">
-                    <span>🔊 朗读欢迎语</span>
+            <!-- 三功能语音按钮（朗读、停止、语音对话） -->
+            <div class="grid grid-cols-3 gap-1.5 mb-3">
+                <button onclick="playAiVoice()" id="ai-voice-btn" class="bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 px-2 py-2 rounded-xl text-[10px] font-bold flex items-center justify-center space-x-1 transition active:scale-95 shadow-sm">
+                    <span>🔊 朗读</span>
                 </button>
-                <button onclick="startVoiceRecognition()" id="mic-btn" class="flex-1 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white px-3 py-2 rounded-xl text-[11px] font-bold flex items-center justify-center space-x-1 shadow transition active:scale-95">
-                    <span>🎙️ 语音对话</span>
+                <button onclick="stopAiVoice()" class="bg-stone-100 hover:bg-stone-200 text-stone-700 border border-stone-300 px-2 py-2 rounded-xl text-[10px] font-bold flex items-center justify-center space-x-1 transition active:scale-95 shadow-sm">
+                    <span>⏹️ 停止</span>
+                </button>
+                <button onclick="startVoiceRecognition()" id="mic-btn" class="bg-gradient-to-r from-amber-500 to-amber-600 text-white px-2 py-2 rounded-xl text-[10px] font-bold flex items-center justify-center space-x-1 shadow transition active:scale-95">
+                    <span>🎙️ 对话</span>
                 </button>
             </div>
             
@@ -279,6 +326,45 @@
 
         const urlParams = new URLSearchParams(window.location.search);
         const currentTable = urlParams.get('table') || 'V1';
+
+        let currentOrderMode = 'Dine In';
+        let currentPax = 2;
+
+        function setOrderMode(mode) {
+            currentOrderMode = mode;
+            const dineInEl = document.getElementById('mode-dine-in');
+            const takeAwayEl = document.getElementById('mode-take-away');
+            const paxContainer = document.getElementById('pax-container');
+
+            if (mode === 'Dine In') {
+                dineInEl.className = "cursor-pointer border-2 border-[#D4AF37] bg-amber-50/60 rounded-2xl p-4 flex flex-col items-center justify-center space-y-2 transition shadow-sm";
+                dineInEl.querySelector('span:nth-child(2)').className = "text-xs font-bold text-[#2C221E]";
+                takeAwayEl.className = "cursor-pointer border-2 border-stone-200 bg-white rounded-2xl p-4 flex flex-col items-center justify-center space-y-2 transition shadow-sm";
+                takeAwayEl.querySelector('span:nth-child(2)').className = "text-xs font-semibold text-stone-600";
+                paxContainer.style.display = 'flex';
+            } else {
+                takeAwayEl.className = "cursor-pointer border-2 border-[#D4AF37] bg-amber-50/60 rounded-2xl p-4 flex flex-col items-center justify-center space-y-2 transition shadow-sm";
+                takeAwayEl.querySelector('span:nth-child(2)').className = "text-xs font-bold text-[#2C221E]";
+                dineInEl.className = "cursor-pointer border-2 border-stone-200 bg-white rounded-2xl p-4 flex flex-col items-center justify-center space-y-2 transition shadow-sm";
+                dineInEl.querySelector('span:nth-child(2)').className = "text-xs font-semibold text-stone-600";
+                paxContainer.style.display = 'none';
+            }
+        }
+
+        function adjustPax(change) {
+            currentPax += change;
+            if (currentPax < 1) currentPax = 1;
+            if (currentPax > 20) currentPax = 20;
+            document.getElementById('display-pax').innerText = currentPax;
+        }
+
+        function confirmModeSelection() {
+            document.getElementById('mode-selection-modal').classList.add('hidden');
+            document.getElementById('header-mode-text').innerText = currentOrderMode === 'Dine In' ? '堂食' : '打包';
+            document.getElementById('display-pax-num').innerText = currentPax;
+            showToast(`已进入：${currentOrderMode === 'Dine In' ? '堂食 ('+currentPax+'位)' : '打包带走'}`);
+        }
+
         document.addEventListener("DOMContentLoaded", () => {
             const tableElem = document.getElementById('display-table-num');
             if (tableElem) tableElem.innerText = `${currentTable} 桌`;
@@ -297,7 +383,7 @@
             } catch(e) {}
         });
 
-        // ==================== 🤖 AI 智能迎宾助手核心逻辑（语速调快、支持双语音） ====================
+        // ==================== 🤖 AI 智能迎宾助手核心逻辑 ====================
         let aiWelcomeSpeechText = "";
 
         function initAiWelcome() {
@@ -322,7 +408,7 @@
             box.classList.toggle('hidden');
         }
 
-        // 🔊 朗读语音函数（语速提升至 1.25，声音更加轻快自然）
+        // 🔊 朗读语音函数（1.0 标准语速）
         function playAiVoice() {
             if (!('speechSynthesis' in window)) {
                 showToast('您的浏览器暂不支持语音播报功能');
@@ -331,14 +417,33 @@
             window.speechSynthesis.cancel();
             const utterance = new SpeechSynthesisUtterance(aiWelcomeSpeechText);
             utterance.lang = 'zh-CN';
-            utterance.rate = 1.25; // 语速调快，更加干练自然
-            utterance.pitch = 1.1; 
+            utterance.rate = 1.0;
+            utterance.pitch = 1.0; 
+
+            const voices = window.speechSynthesis.getVoices();
+            const naturalVoice = voices.find(v => v.lang.includes('zh') && (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Siri')));
+            if (naturalVoice) {
+                utterance.voice = naturalVoice;
+            }
+
             window.speechSynthesis.speak(utterance);
             showToast('🔊 AI 语音正在播报...');
         }
 
+        // ⏹️ 停止朗读按钮函数
+        function stopAiVoice() {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                showToast('⏹️ 已停止语音播报');
+            }
+        }
+
         // 🎙️ 语音对话识别功能
         function startVoiceRecognition() {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+            }
+
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SpeechRecognition) {
                 showToast('您的浏览器暂不支持语音识别，请直接点击快捷按钮提问咯！');
@@ -374,7 +479,6 @@
             recognition.start();
         }
 
-        // 智能化语音关键词解析与大马风味回复
         function processCustomerVoiceInput(spokenText) {
             let reply = "";
             if (spokenText.includes('饭') || spokenText.includes('主食') || spokenText.includes('饿') || spokenText.includes('面')) {
@@ -395,10 +499,14 @@
             aiWelcomeSpeechText = reply;
             const greetingEl = document.getElementById('ai-greeting-text');
             if (greetingEl) greetingEl.innerText = reply;
-            playAiVoice(); // 自动用调快后的语音读出回复
+            playAiVoice();
         }
 
         function askAiQuick(type) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+            }
+
             const greetingEl = document.getElementById('ai-greeting-text');
             if (type === 'recommend') {
                 aiWelcomeSpeechText = "为您推荐本店招牌：【黑椒黄油焗波士顿龙虾】、【金牌原只鲍汁扣花胶】以及【清蒸游水老虎斑】，肉质鲜甜，绝对让您大饱口福！";
@@ -421,73 +529,96 @@
             setTimeout(() => toast.classList.add('opacity-0'), 2500);
         }
 
-        // 全菜单 50 道菜品
+        // ==================== 📋 全菜单 50 道菜品 ====================
         const dishes = [
-            { id: 1, cat: 'seafood', name: '黑椒黄油焗波士顿龙虾', desc: '波士顿鲜活大龙虾，黄油黑椒浓香焗制', price: 0, isMarket: true, img: 'images/longxia.jpg', isRec: true },
-            { id: 2, cat: 'seafood', name: '金牌原只鲍汁扣花胶', desc: '顶级花胶文火慢煨，浓郁鲍汁胶原满满', price: 0, isMarket: true, img: 'images/huajiao.jpg'},
-            { id: 3, cat: 'seafood', name: '避风塘炒斯里兰卡蟹', desc: '大个斯里兰卡肉蟹，蒜香酥脆避风塘风味', price: 0, isMarket: true, img: 'images/xie.jpg', isRec: true },
-            { id: 4, cat: 'seafood', name: '清蒸游水老虎斑/龙趸石斑', desc: '生猛海鲜现杀古法清蒸，肉质极致鲜甜', price: 0, isMarket: true, img: 'images/laohuban.jpg', isRec: true },
-            { id: 5, cat: 'seafood', name: '古法清蒸顺壳鱼', desc: '鲜活顺壳鱼，秘传清蒸酱汁，极鲜嫩滑', price: 0, isMarket: true, img: 'images/shunhe.jpg', isRec: true },
-            { id: 6, cat: 'seafood', name: '黄金蒜蓉粉丝蒸大明虾', desc: '金黄蒜蓉铺底，大明虾吸收鲜甜汁水', price: 68.00, isMarket: false, img: 'images/daxia.jpg'},
-            { id: 7, cat: 'seafood', name: '港式金牌避风塘炒苏东', desc: '外脆里嫩，蒜香扑鼻，下酒绝配', price: 45.00, isMarket: false, img: 'images/songtong.jpg'},
-            { id: 8, cat: 'seafood', name: '招牌姜葱爆炒鲜啦啦', desc: '新鲜啦啦大火爆炒，姜葱去腥提鲜', price: 25.00, isMarket: false, img: 'images/lala.jpg'},
-            { id: 9, cat: 'seafood', name: '炭烧金牌乳猪全体', desc: '皮脆肉嫩仪式感拉满，宴席镇台大菜', price: 288.00, isMarket: false, img: 'images/shaozhu.jpg'},
-            { id: 10, cat: 'seafood', name: '豉汁独蒜蒸白鳝', desc: '生猛白鳝生切段，独蒜豆豉汁蒸出鲜甜', price: 0, isMarket: true, img: 'images/baishan.jpg'},
-            { id: 11, cat: 'seafood', name: '白灼游水基围虾', desc: '生猛活虾直接白灼，原汁原味鲜甜弹牙', price: 55.00, isMarket: false, img: 'images/baixia.jpg'},
-            { id: 12, cat: 'seafood', name: '椒盐鲜鱿/大明虾', desc: '生猛鲜鱿大火急炸，椒盐惹味', price: 48.00, isMarket: false, img: 'images/xia.jpg'},
-            { id: 13, cat: 'seafood', name: '葱油泼鲜鲍鱼', desc: '鲜活小鲍鱼清蒸后热葱油激发出极致鲜香', price: 68.00, isMarket: false, img: 'images/baoyu.jpg'},
+            // 🦐 生猛海鲜 (101 - 113)
+            { id: 1, code: '101', cat: 'seafood', name: '黑椒黄油焗波士顿龙虾', desc: '波士顿鲜活大龙虾，黄油黑椒浓香焗制', price: 0, isMarket: true, img: 'images/longxia.jpg', isRec: true },
+            { id: 2, code: '102', cat: 'seafood', name: '金牌原只鲍汁扣花胶', desc: '顶级花胶文火慢煨，浓郁鲍汁胶原满满', price: 0, isMarket: true, img: 'images/huajiao.jpg'},
+            { id: 3, code: '103', cat: 'seafood', name: '避风塘炒斯里兰卡蟹', desc: '大个斯里兰卡肉蟹，蒜香酥脆避风塘风味', price: 0, isMarket: true, img: 'images/xie.jpg', isRec: true },
+            { id: 4, code: '104', cat: 'seafood', name: '清蒸游水老虎斑/龙趸石斑', desc: '生猛海鲜现杀古法清蒸，肉质极致鲜甜', price: 0, isMarket: true, img: 'images/laohuban.jpg', isRec: true },
+            { id: 5, code: '105', cat: 'seafood', name: '古法清蒸顺壳鱼', desc: '鲜活顺壳鱼，秘传清蒸酱汁，极鲜嫩滑', price: 0, isMarket: true, img: 'images/shunhe.jpg', isRec: true },
+            { id: 6, code: '106', cat: 'seafood', name: '黄金蒜蓉粉丝蒸大明虾', desc: '金黄蒜蓉铺底，大明虾吸收鲜甜汁水', price: 68.00, isMarket: false, img: 'images/daxia.jpg'},
+            { id: 7, code: '107', cat: 'seafood', name: '港式金牌避风塘炒苏东', desc: '外脆里嫩，蒜香扑鼻，下酒绝配', price: 45.00, isMarket: false, img: 'images/songtong.jpg'},
+            { id: 8, code: '108', cat: 'seafood', name: '招牌姜葱爆炒鲜啦啦', desc: '新鲜啦啦大火爆炒，姜葱去腥提鲜', price: 25.00, isMarket: false, img: 'images/lala.jpg'},
+            { id: 9, code: '109', cat: 'seafood', name: '炭烧金牌乳猪全体', desc: '皮脆肉嫩仪式感拉满，宴席镇台大菜', price: 288.00, isMarket: false, img: 'images/shaozhu.jpg'},
+            { id: 10, code: '110', cat: 'seafood', name: '豉汁独蒜蒸白鳝', desc: '生猛白鳝生切段，独蒜豆豉汁蒸出鲜甜', price: 0, isMarket: true, img: 'images/baishan.jpg'},
+            { id: 11, code: '111', cat: 'seafood', name: '白灼游水基围虾', desc: '生猛活虾直接白灼，原汁原味鲜甜弹牙', price: 55.00, isMarket: false, img: 'images/baixia.jpg'},
+            { id: 12, code: '112', cat: 'seafood', name: '椒盐鲜鱿/大明虾', desc: '生猛鲜鱿大火急炸，椒盐惹味', price: 48.00, isMarket: false, img: 'images/xia.jpg'},
+            { id: 13, code: '113', cat: 'seafood', name: '葱油泼鲜鲍鱼', desc: '鲜活小鲍鱼清蒸后热葱油激发出极致鲜香', price: 68.00, isMarket: false, img: 'images/baoyu.jpg'},
 
-            { id: 14, cat: 'meat', name: '招牌秘制黄金排骨王', desc: '酒楼镇店之宝，外酥里嫩，秘制酱汁包裹', price: 28.00, isMarket: false, img: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=500&q=80', isRec: true },
-            { id: 15, cat: 'meat', name: '正宗广式酸甜咕咾肉', desc: '经典粤菜，外脆内软，酸甜开胃', price: 26.00, isMarket: false, img: 'https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?auto=format&fit=crop&w=500&q=80', isRec: true },
-            { id: 16, cat: 'meat', name: '当红炸子鸡', desc: '皮脆肉嫩多汁，粤式经典脆皮烧鸡', price: 38.00, isMarket: false, img: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?auto=format&fit=crop&w=500&q=80', isRec: true },
-            { id: 17, cat: 'meat', name: '明炉深井烧鸭', desc: '皮香肉滑，传统深井烧腊风味', price: 32.00, isMarket: false, img: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?auto=format&fit=crop&w=500&q=80', isRec: false },
-            { id: 18, cat: 'meat', name: '蜜汁肥浓叉烧', desc: '半肥瘦蜜汁烤叉烧，入口即化极香甜', price: 28.00, isMarket: false, img: 'https://images.unsplash.com/photo-1603048588665-791ca8aea617?auto=format&fit=crop&w=500&q=80', isRec: true },
-            { id: 19, cat: 'meat', name: '脆皮黑椒烧肉', desc: '外皮酥脆卡兹作响，黑椒提味下酒绝配', price: 28.00, isMarket: false, img: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=500&q=80', isRec: false },
-            { id: 20, cat: 'meat', name: '客家古法盐焗鸡', desc: '手撕盐焗鸡香气扑鼻，咸香入骨', price: 35.00, isMarket: false, img: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?auto=format&fit=crop&w=500&q=80', isRec: false },
-            { id: 21, cat: 'meat', name: '玫瑰豉油鸡', desc: '玫瑰露酒与秘制豉油浸熟，皮滑肉嫩', price: 32.00, isMarket: false, img: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?auto=format&fit=crop&w=500&q=80', isRec: false },
-            { id: 22, cat: 'meat', name: '沙律明虾球', desc: '大明虾仁酥炸伴香甜沙律酱，老少咸宜', price: 38.00, isMarket: false, img: 'images/xiaqiu.jpg'},
-            { id: 23, cat: 'meat', name: '黑椒铁盘牛柳粒', desc: '安格斯牛肉粒铁盘滋滋作响，黑椒浓香', price: 38.00, isMarket: false, img: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=500&q=80', isRec: true },
-            { id: 24, cat: 'meat', name: '秘制红烧肉鲍鱼仔', desc: '东坡红烧肉搭配鲜美鲍鱼仔，富贵吉祥', price: 45.00, isMarket: false, img: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=500&q=80', isRec: true },
-            { id: 25, cat: 'meat', name: '金沙咸蛋黄炸排骨', desc: '浓郁咸蛋黄沙包裹酥脆排骨，咸香四溢', price: 35.00, isMarket: false, img: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=500&q=80', isRec: false },
-            { id: 26, cat: 'meat', name: '秘制蒙古风味猪扒', desc: '特调蒙古酱汁香煎，肉香浓郁', price: 28.00, isMarket: false, img: 'https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?auto=format&fit=crop&w=500&q=80', isRec: false },
-            { id: 27, cat: 'meat', name: '招牌秘制妈蜜鸡球', desc: '特制妈蜜酱风味，甜中带香，老少咸宜', price: 26.00, isMarket: false, img: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?auto=format&fit=crop&w=500&q=80', isRec: false },
+            // 🥩 招牌肉类 (201 - 214)
+            { id: 14, code: '201', cat: 'meat', name: '招牌秘制黄金排骨王', desc: '酒楼镇店之宝，外酥里嫩，秘制酱汁包裹', price: 28.00, isMarket: false, img: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=500&q=80', isRec: true },
+            { id: 15, code: '202', cat: 'meat', name: '正宗广式酸甜咕咾肉', desc: '经典粤菜，外脆内软，酸甜开胃', price: 26.00, isMarket: false, img: 'https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?auto=format&fit=crop&w=500&q=80', isRec: true },
+            { id: 16, code: '203', cat: 'meat', name: '当红炸子鸡', desc: '皮脆肉嫩多汁，粤式经典脆皮烧鸡', price: 38.00, isMarket: false, img: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?auto=format&fit=crop&w=500&q=80', isRec: true },
+            { id: 17, code: '204', cat: 'meat', name: '明炉深井烧鸭', desc: '皮香肉滑，传统深井烧腊风味', price: 32.00, isMarket: false, img: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?auto=format&fit=crop&w=500&q=80', isRec: false },
+            { id: 18, code: '205', cat: 'meat', name: '蜜汁肥浓叉烧', desc: '半肥瘦蜜汁烤叉烧，入口即化极香甜', price: 28.00, isMarket: false, img: 'https://images.unsplash.com/photo-1603048588665-791ca8aea617?auto=format&fit=crop&w=500&q=80', isRec: true },
+            { id: 19, code: '206', cat: 'meat', name: '脆皮黑椒烧肉', desc: '外皮酥脆卡兹作响，黑椒提味下酒绝配', price: 28.00, isMarket: false, img: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=500&q=80', isRec: false },
+            { id: 20, code: '207', cat: 'meat', name: '客家古法盐焗鸡', desc: '手撕盐焗鸡香气扑鼻，咸香入骨', price: 35.00, isMarket: false, img: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?auto=format&fit=crop&w=500&q=80', isRec: false },
+            { id: 21, code: '208', cat: 'meat', name: '玫瑰豉油鸡', desc: '玫瑰露酒与秘制豉油浸熟，皮滑肉嫩', price: 32.00, isMarket: false, img: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?auto=format&fit=crop&w=500&q=80', isRec: false },
+            { id: 22, code: '209', cat: 'meat', name: '沙律明虾球', desc: '大明虾仁酥炸伴香甜沙律酱，老少咸宜', price: 38.00, isMarket: false, img: 'images/xiaqiu.jpg'},
+            { id: 23, code: '210', cat: 'meat', name: '黑椒铁盘牛柳粒', desc: '安格斯牛肉粒铁盘滋滋作响，黑椒浓香', price: 38.00, isMarket: false, img: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=500&q=80', isRec: true },
+            { id: 24, code: '211', cat: 'meat', name: '秘制红烧肉鲍鱼仔', desc: '东坡红烧肉搭配鲜美鲍鱼仔，富贵吉祥', price: 45.00, isMarket: false, img: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=500&q=80', isRec: true },
+            { id: 25, code: '212', cat: 'meat', name: '金沙咸蛋黄炸排骨', desc: '浓郁咸蛋黄沙包裹酥脆排骨，咸香四溢', price: 35.00, isMarket: false, img: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=500&q=80', isRec: false },
+            { id: 26, code: '213', cat: 'meat', name: '秘制蒙古风味猪扒', desc: '特调蒙古酱汁香煎，肉香浓郁', price: 28.00, isMarket: false, img: 'https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?auto=format&fit=crop&w=500&q=80', isRec: false },
+            { id: 27, code: '214', cat: 'meat', name: '招牌秘制妈蜜鸡球', desc: '特制妈蜜酱风味，甜中带香，老少咸宜', price: 26.00, isMarket: false, img: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?auto=format&fit=crop&w=500&q=80', isRec: false },
 
-            { id: 28, cat: 'fry', name: '招牌铁盘海鲜豆腐', desc: '自制滑嫩豆腐铺底，海鲜酱汁滋滋作响', price: 22.00, isMarket: false, img: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=500&q=80', isRec: true },
-            { id: 29, cat: 'fry', name: '传统香滑芙蓉蛋', desc: '鸡蛋大火煎至蓬松金黄，包裹葱花虾米', price: 16.00, isMarket: false, img: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=500&q=80', isRec: false },
-            { id: 30, cat: 'fry', name: '经典家常洋葱炒蛋', desc: '大葱爆香翻炒金黄鸡蛋，家常美味', price: 14.00, isMarket: false, img: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=500&q=80', isRec: false },
-            { id: 31, cat: 'fry', name: '菜香咸鱼豆腐煲', desc: '咸鱼碎与滑豆腐慢火煲透，极香浓', price: 24.00, isMarket: false, img: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=500&q=80', isRec: false },
-            { id: 32, cat: 'fry', name: '鲜虾仁滑蛋', desc: '鲜嫩大虾仁搭配滑蛋，口感丝滑', price: 22.00, isMarket: false, img: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=500&q=80', isRec: false },
-            { id: 33, cat: 'fry', name: '苦瓜炒咸蛋黄', desc: '甘苦适中，咸蛋黄包裹解腻开胃', price: 18.00, isMarket: false, img: 'https://images.unsplash.com/photo-1550989460-0adf9ea622e2?auto=format&fit=crop&w=500&q=80', isRec: false },
+            // 🍳 滋味小炒 (301 - 306)
+            { id: 28, code: '301', cat: 'fry', name: '招牌铁盘海鲜豆腐', desc: '自制滑嫩豆腐铺底，海鲜酱汁滋滋作响', price: 22.00, isMarket: false, img: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=500&q=80', isRec: true },
+            { id: 29, code: '302', cat: 'fry', name: '传统香滑芙蓉蛋', desc: '鸡蛋大火煎至蓬松金黄，包裹葱花虾米', price: 16.00, isMarket: false, img: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=500&q=80', isRec: false },
+            { id: 30, code: '303', cat: 'fry', name: '经典家常洋葱炒蛋', desc: '大葱爆香翻炒金黄鸡蛋，家常美味', price: 14.00, isMarket: false, img: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=500&q=80', isRec: false },
+            { id: 31, code: '304', cat: 'fry', name: '菜香咸鱼豆腐煲', desc: '咸鱼碎与滑豆腐慢火煲透，极香浓', price: 24.00, isMarket: false, img: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=500&q=80', isRec: false },
+            { id: 32, code: '305', cat: 'fry', name: '鲜虾仁滑蛋', desc: '鲜嫩大虾仁搭配滑蛋，口感丝滑', price: 22.00, isMarket: false, img: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=500&q=80', isRec: false },
+            { id: 33, code: '306', cat: 'fry', name: '苦瓜炒咸蛋黄', desc: '甘苦适中，咸蛋黄包裹解腻开胃', price: 18.00, isMarket: false, img: 'https://images.unsplash.com/photo-1550989460-0adf9ea622e2?auto=format&fit=crop&w=500&q=80', isRec: false },
 
-            { id: 34, cat: 'veg', name: '大火爆炒清甜油麦菜', desc: '猛火快炒，清脆爽口', price: 15.00, isMarket: false, img: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=500&q=80', isRec: false },
-            { id: 35, cat: 'veg', name: '蒜蓉清炒香脆番薯叶', desc: '新鲜番薯叶蒜香清炒，农家风味', price: 14.00, isMarket: false, img: 'https://images.unsplash.com/photo-1576045057995-568f588f82fb?auto=format&fit=crop&w=500&q=80', isRec: false },
-            { id: 36, cat: 'veg', name: '金银蛋上汤苋菜', desc: '皮蛋咸蛋煲出浓郁上汤，滋补清甜', price: 18.00, isMarket: false, img: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=500&q=80', isRec: false },
-            { id: 37, cat: 'veg', name: '招牌马来风光(虾米炒通菜)', desc: '特制参巴虾米大火爆炒通菜，微辣过瘾', price: 15.00, isMarket: false, img: 'https://images.unsplash.com/photo-1550989460-0adf9ea622e2?auto=format&fit=crop&w=500&q=80', isRec: false },
-            { id: 38, cat: 'veg', name: '蟹肉扒翡翠豆腐', desc: '自制滑嫩豆腐佐以鲜美蟹肉勾芡，高档精致', price: 24.00, isMarket: false, img: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=500&q=80', isRec: true },
-            { id: 39, cat: 'veg', name: '生啫唐生菜煲', desc: '砂锅唐生菜生啫爆香，保留爽脆与鲜甜', price: 18.00, isMarket: false, img: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=500&q=80', isRec: false },
-            { id: 40, cat: 'veg', name: '咸蛋黄焗金南瓜', desc: '南瓜外脆内糯，裹满沙软咸蛋黄', price: 20.00, isMarket: false, img: 'https://images.unsplash.com/photo-1576045057995-568f588f82fb?auto=format&fit=crop&w=500&q=80', isRec: false },
+            // 🥬 爽口时蔬 (401 - 407)
+            { id: 34, code: '401', cat: 'veg', name: '大火爆炒清甜油麦菜', desc: '猛火快炒，清脆爽口', price: 15.00, isMarket: false, img: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=500&q=80', isRec: false },
+            { id: 35, code: '402', cat: 'veg', name: '蒜蓉清炒香脆番薯叶', desc: '新鲜番薯叶蒜香清炒，农家风味', price: 14.00, isMarket: false, img: 'https://images.unsplash.com/photo-1576045057995-568f588f82fb?auto=format&fit=crop&w=500&q=80', isRec: false },
+            { id: 36, code: '403', cat: 'veg', name: '金银蛋上汤苋菜', desc: '皮蛋咸蛋煲出浓郁上汤，滋补清甜', price: 18.00, isMarket: false, img: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=500&q=80', isRec: false },
+            { id: 37, code: '404', cat: 'veg', name: '招牌马来风光(虾米炒通菜)', desc: '特制参巴虾米大火爆炒通菜，微辣过瘾', price: 15.00, isMarket: false, img: 'https://images.unsplash.com/photo-1550989460-0adf9ea622e2?auto=format&fit=crop&w=500&q=80', isRec: false },
+            { id: 38, code: '405', cat: 'veg', name: '蟹肉扒翡翠豆腐', desc: '自制滑嫩豆腐佐以鲜美蟹肉勾芡，高档精致', price: 24.00, isMarket: false, img: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=500&q=80', isRec: true },
+            { id: 39, code: '406', cat: 'veg', name: '生啫唐生菜煲', desc: '砂锅唐生菜生啫爆香，保留爽脆与鲜甜', price: 18.00, isMarket: false, img: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=500&q=80', isRec: false },
+            { id: 40, code: '407', cat: 'veg', name: '咸蛋黄焗金南瓜', desc: '南瓜外脆内糯，裹满沙软咸蛋黄', price: 20.00, isMarket: false, img: 'https://images.unsplash.com/photo-1576045057995-568f588f82fb?auto=format&fit=crop&w=500&q=80', isRec: false },
 
-            { id: 41, cat: 'staple', name: '精选高级香米白饭', desc: '粒粒饱满，酒楼标配米饭', price: 2.00, isMarket: false, img: 'https://images.unsplash.com/photo-1516684732162-798a0062be99?auto=format&fit=crop&w=500&q=80', isRec: false },
-            { id: 42, cat: 'staple', name: '经典槟城干炒河粉/金牌干炒牛河', desc: '锅气十足，河粉弹牙牛肉滑嫩', price: 18.00, isMarket: false, img: 'https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&w=500&q=80', isRec: true },
-            { id: 43, cat: 'staple', name: '招牌福建大碌面', desc: '浓郁黑酱油焖煮粗面，猪油渣提香', price: 18.00, isMarket: false, img: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=500&q=80', isRec: true },
-            { id: 44, cat: 'staple', name: '黄金粒粒香海鲜炒饭', desc: '特选香米大火翻炒海鲜碎，金黄松散', price: 20.00, isMarket: false, img: 'https://images.unsplash.com/photo-1603133872878-684f208fb84b?auto=format&fit=crop&w=500&q=80', isRec: false },
-            { id: 45, cat: 'staple', name: '生炒腊味糯米饭', desc: '广式腊肠腊肉生炒糯米，香糯暖胃', price: 22.00, isMarket: false, img: 'https://images.unsplash.com/photo-1541529086526-db283c563270?auto=format&fit=crop&w=500&q=80', isRec: true },
-            { id: 46, cat: 'staple', name: '砂锅生炒牛肉饭', desc: '砂锅高温生炒牛肉饭，焦香锅巴极诱人', price: 22.00, isMarket: false, img: 'https://images.unsplash.com/photo-1541529086526-db283c563270?auto=format&fit=crop&w=500&q=80', isRec: false },
+            // 🍚 主食白饭 (501 - 506)
+            { id: 41, code: '501', cat: 'staple', name: '精选高级香米白饭', desc: '粒粒饱满，酒楼标配米饭', price: 2.00, isMarket: false, img: 'https://images.unsplash.com/photo-1516684732162-798a0062be99?auto=format&fit=crop&w=500&q=80', isRec: false },
+            { id: 42, code: '502', cat: 'staple', name: '经典槟城干炒河粉/金牌干炒牛河', desc: '锅气十足，河粉弹牙牛肉滑嫩', price: 18.00, isMarket: false, img: 'https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&w=500&q=80', isRec: true },
+            { id: 43, code: '503', cat: 'staple', name: '招牌福建大碌面', desc: '浓郁黑酱油焖煮粗面，猪油渣提香', price: 18.00, isMarket: false, img: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=500&q=80', isRec: true },
+            { id: 44, code: '504', cat: 'staple', name: '黄金粒粒香海鲜炒饭', desc: '特选香米大火翻炒海鲜碎，金黄松散', price: 20.00, isMarket: false, img: 'https://images.unsplash.com/photo-1603133872878-684f208fb84b?auto=format&fit=crop&w=500&q=80', isRec: false },
+            { id: 45, code: '505', cat: 'staple', name: '生炒腊味糯米饭', desc: '广式腊肠腊肉生炒糯米，香糯暖胃', price: 22.00, isMarket: false, img: 'https://images.unsplash.com/photo-1541529086526-db283c563270?auto=format&fit=crop&w=500&q=80', isRec: true },
+            { id: 46, code: '506', cat: 'staple', name: '砂锅生炒牛肉饭', desc: '砂锅高温生炒牛肉饭，焦香锅巴极诱人', price: 22.00, isMarket: false, img: 'https://images.unsplash.com/photo-1541529086526-db283c563270?auto=format&fit=crop&w=500&q=80', isRec: false },
 
-            { id: 47, cat: 'drink', name: '泰国直供清甜冰镇大椰青', desc: '解腻神器，清甜解渴，现开现饮', price: 12.00, isMarket: false, img: 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?auto=format&fit=crop&w=500&q=80', isRec: false },
-            { id: 48, cat: 'drink', name: '鲜榨冰镇桔子酸梅汁', desc: '酸甜冰爽，消暑解腻', price: 6.00, isMarket: false, img: 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?auto=format&fit=crop&w=500&q=80', isRec: false },
-            { id: 49, cat: 'drink', name: '招牌港式杨枝甘露', desc: '芒果西柚西米露，香甜浓郁', price: 9.00, isMarket: false, img: 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=500&q=80', isRec: true },
-            { id: 50, cat: 'drink', name: '冰镇百香果爱玉冰', desc: '百香果果香四溢，搭配爱玉冻清爽过瘾', price: 7.00, isMarket: false, img: 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?auto=format&fit=crop&w=500&q=80', isRec: false }
+            // 🥤 饮品甜品 (601 - 604)
+            { id: 47, code: '601', cat: 'drink', name: '泰国直供清甜冰镇大椰青', desc: '解腻神器，清甜解渴，现开现饮', price: 12.00, isMarket: false, img: 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?auto=format&fit=crop&w=500&q=80', isRec: false },
+            { id: 48, code: '602', cat: 'drink', name: '鲜榨冰镇桔子酸梅汁', desc: '酸甜冰爽，消暑解腻', price: 6.00, isMarket: false, img: 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?auto=format&fit=crop&w=500&q=80', isRec: false },
+            { id: 49, code: '603', cat: 'drink', name: '招牌港式杨枝甘露', desc: '芒果西柚西米露，香甜浓郁', price: 9.00, isMarket: false, img: 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=500&q=80', isRec: true },
+            { id: 50, code: '604', cat: 'drink', name: '冰镇百香果爱玉冰', desc: '百香果果香四溢，搭配爱玉冻清爽过瘾', price: 7.00, isMarket: false, img: 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?auto=format&fit=crop&w=500&q=80', isRec: false }
         ];
 
         let cart = {};
         let activeModalDishId = null;
         let currentModalQty = 1;
 
-        function renderMenu(category = 'seafood') {
+        // 渲染菜单（优化：仅精准匹配 菜品名称 name 和 编号 code，过滤掉描述 desc 干扰）
+        function renderMenu(category = 'seafood', searchKeyword = '') {
             const container = document.getElementById('menu-list');
             container.innerHTML = '';
-            const filtered = dishes.filter(d => d.cat === category);
+
+            let filtered = [];
+            if (searchKeyword.trim() !== '') {
+                const keyword = searchKeyword.trim().toLowerCase();
+                // 核心修改：移除对 desc 的匹配，只匹配 name 和 code
+                filtered = dishes.filter(d => 
+                    d.name.toLowerCase().includes(keyword) || 
+                    d.code.toLowerCase().includes(keyword)
+                );
+            } else {
+                filtered = dishes.filter(d => d.cat === category);
+            }
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<div class="col-span-2 text-center py-10 text-stone-500 text-xs">没有找到名称或编号包含“${searchKeyword}”的食物，请换个词试试~</div>`;
+                return;
+            }
 
             filtered.forEach(dish => {
                 let totalQtyForDish = 0;
@@ -495,7 +626,7 @@
                     cart[dish.id].forEach(item => totalQtyForDish += item.qty);
                 }
 
-                const priceDisplay = dish.isMarket ? '<span class="text-[#D4AF37] font-black text-base">时价</span>' : `<span class="text-[#C59B27] font-black text-base">RM ${dish.price.toFixed(2)}</span>`;
+                const priceDisplay = dish.isMarket ? '<span class="text-stone-900 font-black text-sm">时价</span>' : `<span class="text-stone-900 font-black text-sm">RM ${dish.price.toFixed(2)}</span>`;
 
                 const html = `
                     <div class="bg-white border border-[#E6D5B8] rounded-2xl p-3 shadow-sm flex flex-col justify-between transition hover:shadow-md">
@@ -509,7 +640,9 @@
                         </div>
                         <div class="flex-1 flex flex-col justify-between">
                             <div>
-                                <h4 class="font-black text-[#2C221E] text-sm leading-snug line-clamp-2">${dish.name}</h4>
+                                <h4 class="font-black text-[#2C221E] text-sm leading-snug line-clamp-2">
+                                    <span class="font-black text-[#2C221E] mr-1">${dish.code}</span>${dish.name}
+                                </h4>
                                 <p class="text-[11px] text-[#7A6B63] line-clamp-2 mt-1 leading-relaxed">${dish.desc}</p>
                             </div>
                             <div class="flex justify-between items-center mt-2.5 pt-2.5 border-t border-[#F2EDE4]">
@@ -528,7 +661,21 @@
             });
         }
 
+        function handleSearch(keyword) {
+            if (keyword.trim() !== '') {
+                document.querySelectorAll('.cat-btn').forEach(btn => {
+                    btn.className = "cat-btn flex-shrink-0 px-3.5 py-1.5 rounded-xl text-xs font-medium bg-white text-[#5C4A42] border border-[#E6D5B8] shadow-sm transition";
+                });
+                renderMenu('', keyword);
+            } else {
+                filterMenu('seafood');
+            }
+        }
+
         function filterMenu(cat) {
+            const searchInput = document.getElementById('dish-search-input');
+            if (searchInput) searchInput.value = '';
+
             document.querySelectorAll('.cat-btn').forEach(btn => {
                 btn.className = "cat-btn flex-shrink-0 px-3.5 py-1.5 rounded-xl text-xs font-medium bg-white text-[#5C4A42] border border-[#E6D5B8] shadow-sm transition";
             });
@@ -536,14 +683,14 @@
             if(activeBtn) {
                 activeBtn.className = "cat-btn flex-shrink-0 px-3.5 py-1.5 rounded-xl text-xs font-bold bg-[#D4AF37] text-white shadow transition";
             }
-            renderMenu(cat);
+            renderMenu(cat, '');
         }
 
         function openDishModal(dishId) {
             activeModalDishId = dishId;
             currentModalQty = 1;
             const dish = dishes.find(d => d.id === dishId);
-            document.getElementById('modal-dish-title').innerText = `确认加入：${dish.name}`;
+            document.getElementById('modal-dish-title').innerText = `确认加入：${dish.code} ${dish.name}`;
             document.getElementById('modal-dish-qty').innerText = currentModalQty;
             document.getElementById('dish-custom-note').value = '';
 
@@ -594,7 +741,7 @@
 
             const activeBtn = document.querySelector('.cat-btn.bg-\\[\\#D4AF37\\]');
             let activeCat = activeBtn ? activeBtn.id.replace('btn-', '') : 'seafood';
-            renderMenu(activeCat);
+            renderMenu(activeCat, '');
         }
 
         function updateCartItemQty(dishId, index, change) {
@@ -605,7 +752,7 @@
             
             const activeBtn = document.querySelector('.cat-btn.bg-\\[\\#D4AF37\\]');
             let activeCat = activeBtn ? activeBtn.id.replace('btn-', '') : 'seafood';
-            renderMenu(activeCat);
+            renderMenu(activeCat, '');
         }
 
         function updateCartUI() {
@@ -631,8 +778,8 @@
                         container.innerHTML += `
                             <div class="flex justify-between items-center bg-white p-3.5 rounded-xl border border-[#E6D5B8]">
                                 <div class="flex-1 min-w-0 pr-2">
-                                    <h4 class="text-[#2C221E] text-sm font-bold truncate">${dish.name}</h4>
-                                    <div class="text-[#C59B27] text-xs mt-0.5 font-bold">${priceText}</div>
+                                    <h4 class="text-[#2C221E] text-sm font-bold truncate">${dish.code} ${dish.name}</h4>
+                                    <div class="text-stone-900 text-xs mt-0.5 font-bold">${priceText}</div>
                                     ${noteHtml}
                                 </div>
                                 <div class="flex items-center space-x-2.5 flex-shrink-0">
@@ -713,7 +860,7 @@
                 let itemsHtml = '';
                 ord.items.forEach(i => {
                     itemsHtml += `<div class="text-xs text-[#5C4A42] flex justify-between py-0.5">
-                        <span>${i.name} x${i.qty} ${i.note ? '('+i.note+')' : ''}</span>
+                        <span>${i.code} ${i.name} x${i.qty} ${i.note ? '('+i.note+')' : ''}</span>
                         <span class="font-bold">${i.isMarket ? '时价' : 'RM ' + (i.price * i.qty).toFixed(2)}</span>
                     </div>`;
                 });
@@ -721,7 +868,7 @@
                 container.innerHTML += `
                     <div class="bg-white border border-[#E6D5B8] rounded-2xl p-4 shadow-sm space-y-2">
                         <div class="flex justify-between items-center border-b border-[#F2EDE4] pb-2">
-                            <span class="text-xs font-bold text-[#D4AF37]">第 ${orders.length - index} 轮下单 (${ord.time})</span>
+                            <span class="text-xs font-bold text-[#D4AF37]">第 ${orders.length - index} 轮下单 (${ord.time}) - [${ord.orderMode || '堂食'}]</span>
                             <span class="text-[11px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-bold">后厨已出单</span>
                         </div>
                         <div class="space-y-1">${itemsHtml}</div>
@@ -780,6 +927,7 @@
                 cart[dishId].forEach(item => {
                     if (dish.isMarket) hasMarketPrice = true;
                     orderItemsData.push({
+                        code: dish.code,
                         name: dish.name,
                         qty: item.qty,
                         price: dish.price,
@@ -798,9 +946,11 @@
                     await db.collection('market_price_queue').add({
                         phone: phone,
                         table: currentTable,
+                        orderMode: currentOrderMode,
+                        pax: currentPax,
                         timestamp: new Date().toISOString(),
                         status: 'pending',
-                        items: orderItemsData.filter(i => i.isMarket).map(i => i.name)
+                        items: orderItemsData.filter(i => i.isMarket).map(i => `${i.code} ${i.name}`)
                     });
                 } catch (err) { console.error(err); }
             }
@@ -817,13 +967,19 @@
 
                 await tableRef.set({
                     status: 'occupied',
+                    orderMode: currentOrderMode,
+                    pax: currentPax,
                     phone: phone,
                     items: existingItems,
                     lastUpdated: new Date().toISOString()
                 }, { merge: true });
             } catch (tableErr) { console.error(tableErr); }
 
-            saveTodayOrder({ time: new Date().toTimeString().substring(0, 5), items: orderItemsData });
+            saveTodayOrder({ 
+                time: new Date().toTimeString().substring(0, 5), 
+                orderMode: currentOrderMode,
+                items: orderItemsData 
+            });
 
             cart = {};
             updateCartUI();
@@ -835,7 +991,7 @@
             btn.innerText = '确认提交订单 (云端同步至后台)';
 
             window.scrollTo(0, 0);
-            document.getElementById('success-modal-title').innerText = `🎉 鼎盛轩下单成功！桌号：${currentTable} 桌`;
+            document.getElementById('success-modal-title').innerText = `🎉 鼎盛轩下单成功！${currentOrderMode === 'Dine In' ? currentTable + ' 桌 ('+currentPax+'位)' : '打包带走'}`;
             document.getElementById('order-success-modal').classList.remove('hidden');
         }
 
