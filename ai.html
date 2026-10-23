@@ -359,6 +359,14 @@
         }
 
         function confirmModeSelection() {
+            if ('speechSynthesis' in window) {
+                try {
+                    const warmUtterance = new SpeechSynthesisUtterance('');
+                    warmUtterance.volume = 0;
+                    window.speechSynthesis.speak(warmUtterance);
+                } catch(e) {}
+            }
+
             document.getElementById('mode-selection-modal').classList.add('hidden');
             document.getElementById('header-mode-text').innerText = currentOrderMode === 'Dine In' ? '堂食' : '打包';
             document.getElementById('display-pax-num').innerText = currentPax;
@@ -370,6 +378,17 @@
             if (tableElem) tableElem.innerText = `${currentTable} 桌`;
 
             initAiWelcome();
+
+            document.addEventListener('click', function initVoiceWarmUp() {
+                if ('speechSynthesis' in window) {
+                    try {
+                        const warmUtterance = new SpeechSynthesisUtterance('');
+                        warmUtterance.volume = 0;
+                        window.speechSynthesis.speak(warmUtterance);
+                    } catch(e) {}
+                }
+                document.removeEventListener('click', initVoiceWarmUp);
+            }, { once: true });
 
             try {
                 const CACHE_WINDOW_MS = 5 * 60 * 60 * 1000;
@@ -408,7 +427,6 @@
             box.classList.toggle('hidden');
         }
 
-        // 🔊 朗读语音函数（1.0 标准语速）
         function playAiVoice() {
             if (!('speechSynthesis' in window)) {
                 showToast('您的浏览器暂不支持语音播报功能');
@@ -430,7 +448,6 @@
             showToast('🔊 AI 语音正在播报...');
         }
 
-        // ⏹️ 停止朗读按钮函数
         function stopAiVoice() {
             if ('speechSynthesis' in window) {
                 window.speechSynthesis.cancel();
@@ -438,7 +455,6 @@
             }
         }
 
-        // 🎙️ 语音对话识别功能
         function startVoiceRecognition() {
             if ('speechSynthesis' in window) {
                 window.speechSynthesis.cancel();
@@ -531,7 +547,6 @@
 
         // ==================== 📋 全菜单 50 道菜品 ====================
         const dishes = [
-            // 🦐 生猛海鲜 (101 - 113)
             { id: 1, code: '101', cat: 'seafood', name: '黑椒黄油焗波士顿龙虾', desc: '波士顿鲜活大龙虾，黄油黑椒浓香焗制', price: 0, isMarket: true, img: 'images/longxia.jpg', isRec: true },
             { id: 2, code: '102', cat: 'seafood', name: '金牌原只鲍汁扣花胶', desc: '顶级花胶文火慢煨，浓郁鲍汁胶原满满', price: 0, isMarket: true, img: 'images/huajiao.jpg'},
             { id: 3, code: '103', cat: 'seafood', name: '避风塘炒斯里兰卡蟹', desc: '大个斯里兰卡肉蟹，蒜香酥脆避风塘风味', price: 0, isMarket: true, img: 'images/xie.jpg', isRec: true },
@@ -546,7 +561,6 @@
             { id: 12, code: '112', cat: 'seafood', name: '椒盐鲜鱿/大明虾', desc: '生猛鲜鱿大火急炸，椒盐惹味', price: 48.00, isMarket: false, img: 'images/xia.jpg'},
             { id: 13, code: '113', cat: 'seafood', name: '葱油泼鲜鲍鱼', desc: '鲜活小鲍鱼清蒸后热葱油激发出极致鲜香', price: 68.00, isMarket: false, img: 'images/baoyu.jpg'},
 
-            // 🥩 招牌肉类 (201 - 214)
             { id: 14, code: '201', cat: 'meat', name: '招牌秘制黄金排骨王', desc: '酒楼镇店之宝，外酥里嫩，秘制酱汁包裹', price: 28.00, isMarket: false, img: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=500&q=80', isRec: true },
             { id: 15, code: '202', cat: 'meat', name: '正宗广式酸甜咕咾肉', desc: '经典粤菜，外脆内软，酸甜开胃', price: 26.00, isMarket: false, img: 'https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?auto=format&fit=crop&w=500&q=80', isRec: true },
             { id: 16, code: '203', cat: 'meat', name: '当红炸子鸡', desc: '皮脆肉嫩多汁，粤式经典脆皮烧鸡', price: 38.00, isMarket: false, img: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?auto=format&fit=crop&w=500&q=80', isRec: true },
@@ -562,7 +576,6 @@
             { id: 26, code: '213', cat: 'meat', name: '秘制蒙古风味猪扒', desc: '特调蒙古酱汁香煎，肉香浓郁', price: 28.00, isMarket: false, img: 'https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?auto=format&fit=crop&w=500&q=80', isRec: false },
             { id: 27, code: '214', cat: 'meat', name: '招牌秘制妈蜜鸡球', desc: '特制妈蜜酱风味，甜中带香，老少咸宜', price: 26.00, isMarket: false, img: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?auto=format&fit=crop&w=500&q=80', isRec: false },
 
-            // 🍳 滋味小炒 (301 - 306)
             { id: 28, code: '301', cat: 'fry', name: '招牌铁盘海鲜豆腐', desc: '自制滑嫩豆腐铺底，海鲜酱汁滋滋作响', price: 22.00, isMarket: false, img: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=500&q=80', isRec: true },
             { id: 29, code: '302', cat: 'fry', name: '传统香滑芙蓉蛋', desc: '鸡蛋大火煎至蓬松金黄，包裹葱花虾米', price: 16.00, isMarket: false, img: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=500&q=80', isRec: false },
             { id: 30, code: '303', cat: 'fry', name: '经典家常洋葱炒蛋', desc: '大葱爆香翻炒金黄鸡蛋，家常美味', price: 14.00, isMarket: false, img: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=500&q=80', isRec: false },
@@ -570,7 +583,6 @@
             { id: 32, code: '305', cat: 'fry', name: '鲜虾仁滑蛋', desc: '鲜嫩大虾仁搭配滑蛋，口感丝滑', price: 22.00, isMarket: false, img: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=500&q=80', isRec: false },
             { id: 33, code: '306', cat: 'fry', name: '苦瓜炒咸蛋黄', desc: '甘苦适中，咸蛋黄包裹解腻开胃', price: 18.00, isMarket: false, img: 'https://images.unsplash.com/photo-1550989460-0adf9ea622e2?auto=format&fit=crop&w=500&q=80', isRec: false },
 
-            // 🥬 爽口时蔬 (401 - 407)
             { id: 34, code: '401', cat: 'veg', name: '大火爆炒清甜油麦菜', desc: '猛火快炒，清脆爽口', price: 15.00, isMarket: false, img: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=500&q=80', isRec: false },
             { id: 35, code: '402', cat: 'veg', name: '蒜蓉清炒香脆番薯叶', desc: '新鲜番薯叶蒜香清炒，农家风味', price: 14.00, isMarket: false, img: 'https://images.unsplash.com/photo-1576045057995-568f588f82fb?auto=format&fit=crop&w=500&q=80', isRec: false },
             { id: 36, code: '403', cat: 'veg', name: '金银蛋上汤苋菜', desc: '皮蛋咸蛋煲出浓郁上汤，滋补清甜', price: 18.00, isMarket: false, img: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=500&q=80', isRec: false },
@@ -579,7 +591,6 @@
             { id: 39, code: '406', cat: 'veg', name: '生啫唐生菜煲', desc: '砂锅唐生菜生啫爆香，保留爽脆与鲜甜', price: 18.00, isMarket: false, img: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=500&q=80', isRec: false },
             { id: 40, code: '407', cat: 'veg', name: '咸蛋黄焗金南瓜', desc: '南瓜外脆内糯，裹满沙软咸蛋黄', price: 20.00, isMarket: false, img: 'https://images.unsplash.com/photo-1576045057995-568f588f82fb?auto=format&fit=crop&w=500&q=80', isRec: false },
 
-            // 🍚 主食白饭 (501 - 506)
             { id: 41, code: '501', cat: 'staple', name: '精选高级香米白饭', desc: '粒粒饱满，酒楼标配米饭', price: 2.00, isMarket: false, img: 'https://images.unsplash.com/photo-1516684732162-798a0062be99?auto=format&fit=crop&w=500&q=80', isRec: false },
             { id: 42, code: '502', cat: 'staple', name: '经典槟城干炒河粉/金牌干炒牛河', desc: '锅气十足，河粉弹牙牛肉滑嫩', price: 18.00, isMarket: false, img: 'https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&w=500&q=80', isRec: true },
             { id: 43, code: '503', cat: 'staple', name: '招牌福建大碌面', desc: '浓郁黑酱油焖煮粗面，猪油渣提香', price: 18.00, isMarket: false, img: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=500&q=80', isRec: true },
@@ -587,7 +598,6 @@
             { id: 45, code: '505', cat: 'staple', name: '生炒腊味糯米饭', desc: '广式腊肠腊肉生炒糯米，香糯暖胃', price: 22.00, isMarket: false, img: 'https://images.unsplash.com/photo-1541529086526-db283c563270?auto=format&fit=crop&w=500&q=80', isRec: true },
             { id: 46, code: '506', cat: 'staple', name: '砂锅生炒牛肉饭', desc: '砂锅高温生炒牛肉饭，焦香锅巴极诱人', price: 22.00, isMarket: false, img: 'https://images.unsplash.com/photo-1541529086526-db283c563270?auto=format&fit=crop&w=500&q=80', isRec: false },
 
-            // 🥤 饮品甜品 (601 - 604)
             { id: 47, code: '601', cat: 'drink', name: '泰国直供清甜冰镇大椰青', desc: '解腻神器，清甜解渴，现开现饮', price: 12.00, isMarket: false, img: 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?auto=format&fit=crop&w=500&q=80', isRec: false },
             { id: 48, code: '602', cat: 'drink', name: '鲜榨冰镇桔子酸梅汁', desc: '酸甜冰爽，消暑解腻', price: 6.00, isMarket: false, img: 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?auto=format&fit=crop&w=500&q=80', isRec: false },
             { id: 49, code: '603', cat: 'drink', name: '招牌港式杨枝甘露', desc: '芒果西柚西米露，香甜浓郁', price: 9.00, isMarket: false, img: 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=500&q=80', isRec: true },
@@ -598,7 +608,6 @@
         let activeModalDishId = null;
         let currentModalQty = 1;
 
-        // 渲染菜单（优化：仅精准匹配 菜品名称 name 和 编号 code，过滤掉描述 desc 干扰）
         function renderMenu(category = 'seafood', searchKeyword = '') {
             const container = document.getElementById('menu-list');
             container.innerHTML = '';
@@ -606,7 +615,6 @@
             let filtered = [];
             if (searchKeyword.trim() !== '') {
                 const keyword = searchKeyword.trim().toLowerCase();
-                // 核心修改：移除对 desc 的匹配，只匹配 name 和 code
                 filtered = dishes.filter(d => 
                     d.name.toLowerCase().includes(keyword) || 
                     d.code.toLowerCase().includes(keyword)
@@ -817,7 +825,6 @@
             }
         }
 
-        // ==================== 今日已点订单逻辑（报备） ====================
         function getTodayDateStr() {
             const d = new Date();
             return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -881,7 +888,11 @@
             document.getElementById('order-success-modal').classList.add('hidden');
         }
 
+        // ==================== 核心修改点：点餐端只推送到桌台和时价队列，不再调用会员 CRM 写入 ====================
         async function checkoutOrder() {
+            const btn = document.getElementById('checkout-btn');
+            if (btn.disabled) return;
+
             const phoneInput = document.getElementById('customer-phone');
             let phone = phoneInput ? phoneInput.value.trim() : '';
 
@@ -907,7 +918,7 @@
                 return;
             }
             if (!phone || phone.length < 7) {
-                showToast('为了方便为您出餐及累计会员积分，请输入正确的手机号码！');
+                showToast('为了方便为您出餐及核对桌台，请输入正确的手机号码！');
                 return;
             }
 
@@ -915,7 +926,6 @@
                 localStorage.setItem('dsx_phone_cache', JSON.stringify({ phone: phone, timestamp: new Date().getTime() }));
             } catch(e) {}
 
-            const btn = document.getElementById('checkout-btn');
             btn.disabled = true;
             btn.innerText = '正在云端同步中...';
 
@@ -937,10 +947,7 @@
                 });
             });
 
-            const orderTotalPrice = window.currentCartTotalPrice || 0;
-
-            await updateCustomerProfileInCloud(phone, orderItemsData, orderTotalPrice);
-
+            // 1. 如果有时价菜，推入时价队列
             if (hasMarketPrice) {
                 try {
                     await db.collection('market_price_queue').add({
@@ -955,6 +962,7 @@
                 } catch (err) { console.error(err); }
             }
 
+            // 2. 将点餐内容同步写入 tables 集合供后厨和收银台实时查看
             try {
                 const tableRef = db.collection('tables').doc(currentTable);
                 const tableDoc = await tableRef.get();
@@ -969,7 +977,7 @@
                     status: 'occupied',
                     orderMode: currentOrderMode,
                     pax: currentPax,
-                    phone: phone,
+                    phone: phone, // 携带手机号，供结账时收银端识别绑定
                     items: existingItems,
                     lastUpdated: new Date().toISOString()
                 }, { merge: true });
@@ -996,47 +1004,6 @@
         }
 
         filterMenu('seafood');
-
-        async function updateCustomerProfileInCloud(customerPhone, currentOrderItems, currentOrderTotal) {
-            try {
-                const memberRef = db.collection('restaurant_members').doc(customerPhone);
-                const docSnap = await memberRef.get();
-
-                let customer = docSnap.exists ? docSnap.data() : {
-                    phone: customerPhone,
-                    totalOrders: 0,
-                    totalSpent: 0,
-                    firstVisit: new Date().toLocaleDateString(),
-                    lastVisit: '',
-                    dishCounts: {},
-                    tags: []
-                };
-
-                customer.totalOrders = (customer.totalOrders || 0) + 1;
-                customer.totalSpent = (Number(customer.totalSpent) || 0) + (Number(currentOrderTotal) || 0);
-                customer.lastVisit = new Date().toISOString();
-
-                if (!customer.dishCounts) customer.dishCounts = {};
-
-                currentOrderItems.forEach(item => {
-                    const qty = item.qty || 1;
-                    customer.dishCounts[item.name] = (customer.dishCounts[item.name] || 0) + qty;
-                });
-
-                customer.topDishes = Object.entries(customer.dishCounts).sort((a, b) => b[1] - a[1]).slice(0, 3).map(e => e[0]);
-
-                let dynamicTags = [];
-                if ((customer.totalSpent / customer.totalOrders) >= 150 || customer.totalSpent >= 500) {
-                    dynamicTags.push('高客单价/优质客户');
-                } else {
-                    dynamicTags.push('大众消费');
-                }
-                dynamicTags.push('活跃会员');
-                customer.tags = dynamicTags;
-
-                await memberRef.set(customer);
-            } catch (error) { console.error(error); }
-        }
     </script>
 </body>
 </html>
