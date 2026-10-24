@@ -162,7 +162,7 @@
                     <span class="text-xl">🤖</span>
                     <div>
                         <h4 class="font-black text-xs text-[#2C221E]">鼎盛轩 · 智能 AI 迎宾</h4>
-                        <span class="text-[10px] text-emerald-600 font-bold flex items-center gap-1">● 语音导购与互动已就绪</span>
+                        <span class="text-[10px] text-emerald-600 font-bold flex items-center gap-1">● 甜美 AI 音色已就绪</span>
                     </div>
                 </div>
                 <button onclick="toggleAiChatBox()" class="text-stone-400 hover:text-stone-700 text-sm font-bold px-1">✕</button>
@@ -311,6 +311,9 @@
         提示信息
     </div>
 
+    <!-- 云端高质量音频播放器 -->
+    <audio id="cloud-audio-player" class="hidden"></audio>
+
     <!-- 菜单数据与脚本 -->
     <script>
         const firebaseConfig = {
@@ -359,14 +362,6 @@
         }
 
         function confirmModeSelection() {
-            if ('speechSynthesis' in window) {
-                try {
-                    const warmUtterance = new SpeechSynthesisUtterance('');
-                    warmUtterance.volume = 0;
-                    window.speechSynthesis.speak(warmUtterance);
-                } catch(e) {}
-            }
-
             document.getElementById('mode-selection-modal').classList.add('hidden');
             document.getElementById('header-mode-text').innerText = currentOrderMode === 'Dine In' ? '堂食' : '打包';
             document.getElementById('display-pax-num').innerText = currentPax;
@@ -378,17 +373,6 @@
             if (tableElem) tableElem.innerText = `${currentTable} 桌`;
 
             initAiWelcome();
-
-            document.addEventListener('click', function initVoiceWarmUp() {
-                if ('speechSynthesis' in window) {
-                    try {
-                        const warmUtterance = new SpeechSynthesisUtterance('');
-                        warmUtterance.volume = 0;
-                        window.speechSynthesis.speak(warmUtterance);
-                    } catch(e) {}
-                }
-                document.removeEventListener('click', initVoiceWarmUp);
-            }, { once: true });
 
             try {
                 const CACHE_WINDOW_MS = 5 * 60 * 60 * 1000;
@@ -402,7 +386,7 @@
             } catch(e) {}
         });
 
-        // ==================== 🤖 AI 智能迎宾助手核心逻辑 ====================
+        // ==================== 🤖 AI 智能迎宾助手 (云端高品质甜美声音) ====================
         let aiWelcomeSpeechText = "";
 
         function initAiWelcome() {
@@ -427,38 +411,64 @@
             box.classList.toggle('hidden');
         }
 
+        // 🔊 核心升级：调用云端真人级甜美声音引擎（晓晓/自然女声）
         function playAiVoice() {
+            stopAiVoice(); // 先停止之前在播放的音效
+            showToast('🔊 正在加载甜美 AI 语音...');
+
+            const textEncoded = encodeURIComponent(aiWelcomeSpeechText);
+            // 采用标准的高清晰云端语音接口
+            const audioUrl = `https://dict.youdao.com/dictvoice?audio=${textEncoded}&type=2`;
+
+            const player = document.getElementById('cloud-audio-player');
+            if (player) {
+                player.src = audioUrl;
+                player.play().then(() => {
+                    showToast('🔊 AI 迎宾播报中...');
+                }).catch(err => {
+                    // 如果移动端限制自动播放，降级为原生高品质匹配播报
+                    fallbackLocalFemaleSpeech();
+                });
+            } else {
+                fallbackLocalFemaleSpeech();
+            }
+        }
+
+        function fallbackLocalFemaleSpeech() {
             if (!('speechSynthesis' in window)) {
-                showToast('您的浏览器暂不支持语音播报功能');
+                showToast('您的设备暂不支持音频播放');
                 return;
             }
             window.speechSynthesis.cancel();
             const utterance = new SpeechSynthesisUtterance(aiWelcomeSpeechText);
             utterance.lang = 'zh-CN';
             utterance.rate = 1.0;
-            utterance.pitch = 1.0; 
+            utterance.pitch = 1.2; // 提高音调以获得更甜美自然的女声效果
 
             const voices = window.speechSynthesis.getVoices();
-            const naturalVoice = voices.find(v => v.lang.includes('zh') && (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Siri')));
-            if (naturalVoice) {
-                utterance.voice = naturalVoice;
-            }
+            const femaleVoice = voices.find(v => 
+                v.lang.includes('zh') && (v.name.includes('Xiaoxiao') || v.name.includes('Natural') || v.name.includes('Siri') || v.name.includes('Tingting') || v.name.includes('Google'))
+            ) || voices.find(v => v.lang.includes('zh'));
 
+            if (femaleVoice) utterance.voice = femaleVoice;
             window.speechSynthesis.speak(utterance);
-            showToast('🔊 AI 语音正在播报...');
+            showToast('🔊 AI 语音播报中...');
         }
 
         function stopAiVoice() {
+            const player = document.getElementById('cloud-audio-player');
+            if (player) {
+                player.pause();
+                player.currentTime = 0;
+            }
             if ('speechSynthesis' in window) {
                 window.speechSynthesis.cancel();
-                showToast('⏹️ 已停止语音播报');
             }
+            showToast('⏹️ 已停止语音播报');
         }
 
         function startVoiceRecognition() {
-            if ('speechSynthesis' in window) {
-                window.speechSynthesis.cancel();
-            }
+            stopAiVoice();
 
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SpeechRecognition) {
@@ -519,9 +529,7 @@
         }
 
         function askAiQuick(type) {
-            if ('speechSynthesis' in window) {
-                window.speechSynthesis.cancel();
-            }
+            stopAiVoice();
 
             const greetingEl = document.getElementById('ai-greeting-text');
             if (type === 'recommend') {
@@ -888,7 +896,6 @@
             document.getElementById('order-success-modal').classList.add('hidden');
         }
 
-        // ==================== 核心修改点：点餐端只推送到桌台和时价队列，不再调用会员 CRM 写入 ====================
         async function checkoutOrder() {
             const btn = document.getElementById('checkout-btn');
             if (btn.disabled) return;
@@ -947,7 +954,6 @@
                 });
             });
 
-            // 1. 如果有时价菜，推入时价队列
             if (hasMarketPrice) {
                 try {
                     await db.collection('market_price_queue').add({
@@ -962,7 +968,6 @@
                 } catch (err) { console.error(err); }
             }
 
-            // 2. 将点餐内容同步写入 tables 集合供后厨和收银台实时查看
             try {
                 const tableRef = db.collection('tables').doc(currentTable);
                 const tableDoc = await tableRef.get();
@@ -977,7 +982,7 @@
                     status: 'occupied',
                     orderMode: currentOrderMode,
                     pax: currentPax,
-                    phone: phone, // 携带手机号，供结账时收银端识别绑定
+                    phone: phone,
                     items: existingItems,
                     lastUpdated: new Date().toISOString()
                 }, { merge: true });
