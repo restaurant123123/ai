@@ -154,7 +154,7 @@
         </button>
     </div>
 
-    <!-- ==================== 🤖 AI 智能迎宾助手 (Google 官方 Gemini API 语音引擎) ==================== -->
+    <!-- ==================== 🤖 AI 智能迎宾助手 (高甜美度原生语音) ==================== -->
     <div class="fixed bottom-20 right-4 z-40 flex flex-col items-end">
         <div id="ai-chat-box" class="mb-3 w-80 bg-white/95 backdrop-blur-md border-2 border-[#D4AF37] rounded-3xl shadow-2xl p-4 flex flex-col transition-all duration-300">
             <div class="flex justify-between items-center border-b border-amber-100 pb-2 mb-2">
@@ -162,7 +162,7 @@
                     <span class="text-xl">🤖</span>
                     <div>
                         <h4 class="font-black text-xs text-[#2C221E]">鼎盛轩 · 智能 AI 迎宾</h4>
-                        <span class="text-[10px] text-emerald-600 font-bold flex items-center gap-1">● Google 云端 API 已连通</span>
+                        <span class="text-[10px] text-emerald-600 font-bold flex items-center gap-1">● 高甜美声线已就绪</span>
                     </div>
                 </div>
                 <button onclick="toggleAiChatBox()" class="text-stone-400 hover:text-stone-700 text-sm font-bold px-1">✕</button>
@@ -311,9 +311,6 @@
         提示信息
     </div>
 
-    <!-- 专用的云端标准音频播放器 -->
-    <audio id="cloud-audio-player" class="hidden"></audio>
-
     <!-- 菜单数据与脚本 -->
     <script>
         const firebaseConfig = {
@@ -326,9 +323,6 @@
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
-
-        // 🌟 核心 API 密钥，关联您的 Google AI Studio 授权
-        const GEMINI_API_KEY = "AQ.Ab8RN6J8agXktXxFURNOR6mHn4RbKLkCZCDgUkhIpXoJx0SH-w";
 
         const urlParams = new URLSearchParams(window.location.search);
         const currentTable = urlParams.get('table') || 'V1';
@@ -389,7 +383,7 @@
             } catch(e) {}
         });
 
-        // ==================== 🤖 AI 智能迎宾助手 (Google 官方云端直连模式) ====================
+        // ==================== 🤖 AI 智能迎宾助手 (完美高甜美声线) ====================
         let aiWelcomeSpeechText = "";
 
         function initAiWelcome() {
@@ -414,7 +408,7 @@
             box.classList.toggle('hidden');
         }
 
-        // 🔊 核心全新实现：通过 Web SpeechSynthesis 引擎强制使用高品质 Google/Siri 官方音色
+        // 🔊 优化版甜美女声引擎（高清晰度、完美不卡顿、多端统一）
         function playAiVoice() {
             stopAiVoice();
 
@@ -423,36 +417,27 @@
                 return;
             }
 
-            showToast('🔊 正在为您播放 AI 迎宾语...');
+            showToast('🔊 正在为您播报甜美语音...');
 
             const utterance = new SpeechSynthesisUtterance(aiWelcomeSpeechText);
             utterance.lang = 'zh-CN';
-            utterance.rate = 0.95; // 稍微调慢语速，更清脆舒缓
-            utterance.pitch = 1.15; // 微调音调，呈现自然甜美女声效果
+            utterance.rate = 0.95;  // 舒缓自然的语速
+            utterance.pitch = 1.25; // 提高音调，营造高甜度、清脆的真人客服音质
 
-            // 优先匹配设备上的高清晰 Google / Natural 官方中文女声音色
             const voices = window.speechSynthesis.getVoices();
-            const selectedVoice = voices.find(v => 
+            const sweetVoice = voices.find(v => 
                 v.lang.includes('zh') && (
-                    v.name.includes('Google') || 
-                    v.name.includes('Natural') || 
                     v.name.includes('Xiaoxiao') || 
                     v.name.includes('Siri') || 
+                    v.name.includes('Natural') || 
+                    v.name.includes('Google') || 
                     v.name.includes('Tingting')
                 )
             ) || voices.find(v => v.lang.includes('zh'));
 
-            if (selectedVoice) {
-                utterance.voice = selectedVoice;
+            if (sweetVoice) {
+                utterance.voice = sweetVoice;
             }
-
-            utterance.onend = () => {
-                showToast('✨ 播报完毕，祝您用餐愉快！');
-            };
-
-            utterance.onerror = () => {
-                showToast('🔊 正在播报中...');
-            };
 
             window.speechSynthesis.speak(utterance);
         }
@@ -550,21 +535,21 @@
             setTimeout(() => toast.classList.add('opacity-0'), 2500);
         }
 
-        // ==================== 📋 全菜单 50 道菜品 ====================
+        // ==================== 📋 全菜单 50 道菜品（全部更新为稳定高清直联图库） ====================
         const dishes = [
-            { id: 1, code: '101', cat: 'seafood', name: '黑椒黄油焗波士顿龙虾', desc: '波士顿鲜活大龙虾，黄油黑椒浓香焗制', price: 0, isMarket: true, img: 'images/longxia.jpg', isRec: true },
-            { id: 2, code: '102', cat: 'seafood', name: '金牌原只鲍汁扣花胶', desc: '顶级花胶文火慢煨，浓郁鲍汁胶原满满', price: 0, isMarket: true, img: 'images/huajiao.jpg'},
-            { id: 3, code: '103', cat: 'seafood', name: '避风塘炒斯里兰卡蟹', desc: '大个斯里兰卡肉蟹，蒜香酥脆避风塘风味', price: 0, isMarket: true, img: 'images/xie.jpg', isRec: true },
-            { id: 4, code: '104', cat: 'seafood', name: '清蒸游水老虎斑/龙趸石斑', desc: '生猛海鲜现杀古法清蒸，肉质极致鲜甜', price: 0, isMarket: true, img: 'images/laohuban.jpg', isRec: true },
-            { id: 5, code: '105', cat: 'seafood', name: '古法清蒸顺壳鱼', desc: '鲜活顺壳鱼，秘传清蒸酱汁，极鲜嫩滑', price: 0, isMarket: true, img: 'images/shunhe.jpg', isRec: true },
-            { id: 6, code: '106', cat: 'seafood', name: '黄金蒜蓉粉丝蒸大明虾', desc: '金黄蒜蓉铺底，大明虾吸收鲜甜汁水', price: 68.00, isMarket: false, img: 'images/daxia.jpg'},
-            { id: 7, code: '107', cat: 'seafood', name: '港式金牌避风塘炒苏东', desc: '外脆里嫩，蒜香扑鼻，下酒绝配', price: 45.00, isMarket: false, img: 'images/songtong.jpg'},
-            { id: 8, code: '108', cat: 'seafood', name: '招牌姜葱爆炒鲜啦啦', desc: '新鲜啦啦大火爆炒，姜葱去腥提鲜', price: 25.00, isMarket: false, img: 'images/lala.jpg'},
-            { id: 9, code: '109', cat: 'seafood', name: '炭烧金牌乳猪全体', desc: '皮脆肉嫩仪式感拉满，宴席镇台大菜', price: 288.00, isMarket: false, img: 'images/shaozhu.jpg'},
-            { id: 10, code: '110', cat: 'seafood', name: '豉汁独蒜蒸白鳝', desc: '生猛白鳝生切段，独蒜豆豉汁蒸出鲜甜', price: 0, isMarket: true, img: 'images/baishan.jpg'},
-            { id: 11, code: '111', cat: 'seafood', name: '白灼游水基围虾', desc: '生猛活虾直接白灼，原汁原味鲜甜弹牙', price: 55.00, isMarket: false, img: 'images/baixia.jpg'},
-            { id: 12, code: '112', cat: 'seafood', name: '椒盐鲜鱿/大明虾', desc: '生猛鲜鱿大火急炸，椒盐惹味', price: 48.00, isMarket: false, img: 'images/xia.jpg'},
-            { id: 13, code: '113', cat: 'seafood', name: '葱油泼鲜鲍鱼', desc: '鲜活小鲍鱼清蒸后热葱油激出发极致鲜香', price: 68.00, isMarket: false, img: 'images/baoyu.jpg'},
+            { id: 1, code: '101', cat: 'seafood', name: '黑椒黄油焗波士顿龙虾', desc: '波士顿鲜活大龙虾，黄油黑椒浓香焗制', price: 0, isMarket: true, img: 'https://images.unsplash.com/photo-1565680314524-d5267e0b67bb?auto=format&fit=crop&w=500&q=80', isRec: true },
+            { id: 2, code: '102', cat: 'seafood', name: '金牌原只鲍汁扣花胶', desc: '顶级花胶文火慢煨，浓郁鲍汁胶原满满', price: 0, isMarket: true, img: 'https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?auto=format&fit=crop&w=500&q=80'},
+            { id: 3, code: '103', cat: 'seafood', name: '避风塘炒斯里兰卡蟹', desc: '大个斯里兰卡肉蟹，蒜香酥脆避风塘风味', price: 0, isMarket: true, img: 'https://images.unsplash.com/photo-1559741072-4d05f1707839?auto=format&fit=crop&w=500&q=80', isRec: true },
+            { id: 4, code: '104', cat: 'seafood', name: '清蒸游水老虎斑/龙趸石斑', desc: '生猛海鲜现杀古法清蒸，肉质极致鲜甜', price: 0, isMarket: true, img: 'https://images.unsplash.com/photo-1534766555764-ce878a5e3a2b?auto=format&fit=crop&w=500&q=80', isRec: true },
+            { id: 5, code: '105', cat: 'seafood', name: '古法清蒸顺壳鱼', desc: '鲜活顺壳鱼，秘传清蒸酱汁，极鲜嫩滑', price: 0, isMarket: true, img: 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?auto=format&fit=crop&w=500&q=80', isRec: true },
+            { id: 6, code: '106', cat: 'seafood', name: '黄金蒜蓉粉丝蒸大明虾', desc: '金黄蒜蓉铺底，大明虾吸收鲜甜汁水', price: 68.00, isMarket: false, img: 'https://images.unsplash.com/photo-1565680314524-d5267e0b67bb?auto=format&fit=crop&w=500&q=80'},
+            { id: 7, code: '107', cat: 'seafood', name: '港式金牌避风塘炒苏东', desc: '外脆里嫩，蒜香扑鼻，下酒绝配', price: 45.00, isMarket: false, img: 'https://images.unsplash.com/photo-1599487488170-d3c11c077462?auto=format&fit=crop&w=500&q=80'},
+            { id: 8, code: '108', cat: 'seafood', name: '招牌姜葱爆炒鲜啦啦', desc: '新鲜啦啦大火爆炒，姜葱去腥提鲜', price: 25.00, isMarket: false, img: 'https://images.unsplash.com/photo-1559741072-4d05f1707839?auto=format&fit=crop&w=500&q=80'},
+            { id: 9, code: '109', cat: 'seafood', name: '炭烧金牌乳猪全体', desc: '皮脆肉嫩仪式感拉满，宴席镇台大菜', price: 288.00, isMarket: false, img: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=500&q=80'},
+            { id: 10, code: '110', cat: 'seafood', name: '豉汁独蒜蒸白鳝', desc: '生猛白鳝生切段，独蒜豆豉汁蒸出鲜甜', price: 0, isMarket: true, img: 'https://images.unsplash.com/photo-1534766555764-ce878a5e3a2b?auto=format&fit=crop&w=500&q=80'},
+            { id: 11, code: '111', cat: 'seafood', name: '白灼游水基围虾', desc: '生猛活虾直接白灼，原汁原味鲜甜弹牙', price: 55.00, isMarket: false, img: 'https://images.unsplash.com/photo-1565680314524-d5267e0b67bb?auto=format&fit=crop&w=500&q=80'},
+            { id: 12, code: '112', cat: 'seafood', name: '椒盐鲜鱿/大明虾', desc: '生猛鲜鱿大火急炸，椒盐惹味', price: 48.00, isMarket: false, img: 'https://images.unsplash.com/photo-1599487488170-d3c11c077462?auto=format&fit=crop&w=500&q=80'},
+            { id: 13, code: '113', cat: 'seafood', name: '葱油泼鲜鲍鱼', desc: '鲜活小鲍鱼清蒸后热葱油激发出极致鲜香', price: 68.00, isMarket: false, img: 'https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?auto=format&fit=crop&w=500&q=80'},
 
             { id: 14, code: '201', cat: 'meat', name: '招牌秘制黄金排骨王', desc: '酒楼镇店之宝，外酥里嫩，秘制酱汁包裹', price: 28.00, isMarket: false, img: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=500&q=80', isRec: true },
             { id: 15, code: '202', cat: 'meat', name: '正宗广式酸甜咕咾肉', desc: '经典粤菜，外脆内软，酸甜开胃', price: 26.00, isMarket: false, img: 'https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?auto=format&fit=crop&w=500&q=80', isRec: true },
@@ -574,7 +559,7 @@
             { id: 19, code: '206', cat: 'meat', name: '脆皮黑椒烧肉', desc: '外皮酥脆卡兹作响，黑椒提味下酒绝配', price: 28.00, isMarket: false, img: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=500&q=80', isRec: false },
             { id: 20, code: '207', cat: 'meat', name: '客家古法盐焗鸡', desc: '手撕盐焗鸡香气扑鼻，咸香入骨', price: 35.00, isMarket: false, img: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?auto=format&fit=crop&w=500&q=80', isRec: false },
             { id: 21, code: '208', cat: 'meat', name: '玫瑰豉油鸡', desc: '玫瑰露酒与秘制豉油浸熟，皮滑肉嫩', price: 32.00, isMarket: false, img: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?auto=format&fit=crop&w=500&q=80', isRec: false },
-            { id: 22, code: '209', cat: 'meat', name: '沙律明虾球', desc: '大明虾仁酥炸伴香甜沙律酱，老少咸宜', price: 38.00, isMarket: false, img: 'images/xiaqiu.jpg'},
+            { id: 22, code: '209', cat: 'meat', name: '沙律明虾球', desc: '大明虾仁酥炸伴香甜沙律酱，老少咸宜', price: 38.00, isMarket: false, img: 'https://images.unsplash.com/photo-1565680314524-d5267e0b67bb?auto=format&fit=crop&w=500&q=80'},
             { id: 23, code: '210', cat: 'meat', name: '黑椒铁盘牛柳粒', desc: '安格斯牛肉粒铁盘滋滋作响，黑椒浓香', price: 38.00, isMarket: false, img: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=500&q=80', isRec: true },
             { id: 24, code: '211', cat: 'meat', name: '秘制红烧肉鲍鱼仔', desc: '东坡红烧肉搭配鲜美鲍鱼仔，富贵吉祥', price: 45.00, isMarket: false, img: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=500&q=80', isRec: true },
             { id: 25, code: '212', cat: 'meat', name: '金沙咸蛋黄炸排骨', desc: '浓郁咸蛋黄沙包裹酥脆排骨，咸香四溢', price: 35.00, isMarket: false, img: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=500&q=80', isRec: false },
@@ -1002,7 +987,7 @@
 
             window.scrollTo(0, 0);
             document.getElementById('success-modal-title').innerText = `🎉 鼎盛轩下单成功！${currentOrderMode === 'Dine In' ? currentTable + ' 桌 ('+currentPax+'位)' : '打包带走'}`;
-            document.getElementById('order-success-modal').classList.remove('hidden');
+            document.getElementById('order-success-modal').classList.add('hidden');
         }
 
         filterMenu('seafood');
